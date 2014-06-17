@@ -1,3 +1,4 @@
+vm = require("vm")
 stringify = require("json-stable-stringify")
 
 prettify = (editor, sorted) ->
@@ -18,14 +19,34 @@ formatter = (text, sorted) ->
   else
     space = "\t"
 
+  parsed = parseJSON(text)
+  if !parsed
+    return text
+
+  if sorted
+    return stringify(parsed, { space: space })
+  else
+    return JSON.stringify(parsed, null, space)
+
+parseJSON = (str) ->
+  if validJSON(str)
+    return JSON.parse(str)
+  else
+    try
+      vm.runInThisContext('newObject='+str)
+      if newObject instanceof Error
+        return false
+      else
+        return JSON.parse(JSON.stringify(newObject))
+    catch err
+      return false
+
+validJSON = (str) ->
   try
-    parsed = JSON.parse(text)
-    if sorted
-      return stringify(parsed, { space: space })
-    else
-      return JSON.stringify(parsed, null, space)
-  catch error
-    text
+    JSON.parse(str)
+    return true
+  catch err
+    return false
 
 module.exports =
   activate: ->
